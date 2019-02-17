@@ -3,7 +3,7 @@ package com.noam.piano_stern.srevice;
 import android.os.AsyncTask;
 
 
-public class SendData extends AsyncTask<Integer, Void, Void> {
+public class SendData extends AsyncTask<String, Void, Void> {
 
     private CommunicationThread device;
 
@@ -15,8 +15,8 @@ public class SendData extends AsyncTask<Integer, Void, Void> {
 
 
     @Override
-    protected Void doInBackground(Integer... params) {
-        int data = params[0];
+    protected Void doInBackground(String... params) {
+        String data = params[0];
 
         device.sendData("*"+data+"#");
         return null;

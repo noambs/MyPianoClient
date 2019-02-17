@@ -1,17 +1,28 @@
 package com.noam.piano_stern;
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
+import android.text.format.Formatter;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 import com.noam.piano_stern.srevice.CommunicationThread;
@@ -30,6 +41,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class MainActivity extends Activity {
 
+    private static final int LOCATION = 1;
+
+    private final AtomicLong playTick = new AtomicLong(0);
 
     private Map<Integer, Integer> tunesSoundMap = new HashMap<Integer, Integer>();
 
@@ -45,7 +59,7 @@ public class MainActivity extends Activity {
 
     private Map<Long, List<RecordInfo>> timeTunesMap = new HashMap<>();
 
-    private Button happyB;
+    private Button song1;
 
     private Button song2;
 
@@ -69,7 +83,33 @@ public class MainActivity extends Activity {
 
     private ImageView btn;
 
+    private Timer timer;
+
+    private TimerTask timerTask;
+
+    private Timer timerWifi;
+
+    private TimerTask timerTaskWifi;
+
+    private MediaPlayer mp;
+
     private boolean loaded;
+
+    private MediaPlayer.OnCompletionListener mediaListener;
+
+    private boolean isRepeat;
+
+    private boolean wifiStatus = false;
+
+    private ArrayList<String> playList;
+
+    private Button playListButton;
+
+    private CheckBox repeat;
+
+    private boolean isPlayList = false;
+
+    private int playListCounter = 0;
 
     int s1;
     int s2;
@@ -85,13 +125,30 @@ public class MainActivity extends Activity {
     int s14 ;
     int s15 ;
 
+    ImageView s10Btn;
+    ImageView s11Btn;
+    ImageView s13Btn;
+    ImageView s14Btn;
+    ImageView s15Btn;
+
     @SuppressLint({"HandlerLeak", "ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        client = new CommunicationThread();
 
+        if(getWifiStatus())
+            client = new CommunicationThread();
+
+        if(client!=null && client.isConnected())
+        {
+            startTimer();
+           /* WifiManager wifiMgr = (WifiManager) this.getApplicationContext().getSystemService(WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
+            int ip = wifiInfo.getIpAddress();
+            String ipAddress = Formatter.formatIpAddress(ip);
+            sendDataToServer("IP:"+ipAddress);*/
+        }
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
@@ -106,8 +163,115 @@ public class MainActivity extends Activity {
             soundPool = new SoundPool(6, AudioManager.STREAM_MUSIC, 0);
         }
 
+        mediaListener = new MediaPlayer.OnCompletionListener(){
 
+            @Override
+            public void onCompletion(MediaPlayer mplayer) {
+                if(!isRepeat && !isPlayList)
+                {
+                    Message message = new Message();
+                    message.what = 2;
+                    handler.sendMessage(message);
+                    mp.stop();
+                    mp.release();
+                    mp = null;
+                }else{
+                    if(isPlayList && !isRepeat)
+                    {
+                        if(playListCounter < playList.size()-1)
+                        {
+                            mp.reset();
+                            if (playTimer != null) {
+                                playTimer.cancel();
+                                playTimer = null;
+                            }
+                            playListCounter++;
+                            PlayingSong(playList.get(playListCounter),null);
+
+
+                        }else{
+                            isPlayList = false;
+                            Message message = new Message();
+                            message.what = 2;
+                            handler.sendMessage(message);
+                            mp.stop();
+                            mp.release();
+                            mp = null;
+                            PlayingSong("play list", playListButton);
+                        }
+                    }else{
+                        if(isPlayList)
+                        {
+                            if (playTimer != null) {
+                                playTimer.cancel();
+                                playTimer = null;
+                            }
+
+                            if(client!=null)
+                            {
+                                if(client.isConnected())
+                                {
+                                    sendDataToServer(String.valueOf(1));
+                                    sendDataToServer(String.valueOf(2));
+                                    sendDataToServer(String.valueOf(3));
+                                    sendDataToServer(String.valueOf(4));
+                                    sendDataToServer(String.valueOf(5));
+                                    sendDataToServer(String.valueOf(6));
+                                    sendDataToServer(String.valueOf(7));
+                                }
+
+
+                            }
+
+                            currentTick = 0;
+                            playTick.set(0);
+
+                            if(playListCounter < playList.size()-1)
+                            {
+                                mp.reset();
+
+                                playListCounter++;
+                                PlayingSong(playList.get(playListCounter),null);
+
+
+                            }
+
+                            if(playListCounter == playList.size()-1)
+                            {
+
+                                playListCounter = 0;
+                                PlayingSong(playList.get(playListCounter),null);
+                            }
+
+                        }else{
+                            if(client!=null)
+                            {
+                                if(client.isConnected())
+                                    sendDataToServer(String.valueOf(1));
+                                sendDataToServer(String.valueOf(2));
+                                sendDataToServer(String.valueOf(3));
+                                sendDataToServer(String.valueOf(4));
+                                sendDataToServer(String.valueOf(5));
+                                sendDataToServer(String.valueOf(6));
+                                sendDataToServer(String.valueOf(7));
+
+                            }
+                            mp.seekTo(0);
+                            mp.start();
+                            currentTick = 0;
+                            playTick.set(0);
+
+                        }
+                    }
+
+
+                }
+
+            }
+        };
         loaded = false;
+
+
         soundPool.setOnLoadCompleteListener(new OnLoadCompleteListener(){
 
             @Override
@@ -131,6 +295,7 @@ public class MainActivity extends Activity {
 
             }
         });
+
 
         s1 = soundPool.load(context, R.raw.note_c, 1);
         s2 = soundPool.load(context, R.raw.note_d, 1);
@@ -160,20 +325,35 @@ public class MainActivity extends Activity {
         ImageView s7Btn = (ImageView) this.findViewById(R.id.s7_btn);
 
 
-        ImageView s10Btn = (ImageView) this.findViewById(R.id.s10_btn);
-        ImageView s11Btn = (ImageView) this.findViewById(R.id.s11_btn);
-        ImageView s13Btn = (ImageView) this.findViewById(R.id.s13_btn);
-        ImageView s14Btn = (ImageView) this.findViewById(R.id.s14_btn);
-        ImageView s15Btn = (ImageView) this.findViewById(R.id.s15_btn);
+         s10Btn = (ImageView) this.findViewById(R.id.s10_btn);
+         s11Btn = (ImageView) this.findViewById(R.id.s11_btn);
+         s13Btn = (ImageView) this.findViewById(R.id.s13_btn);
+         s14Btn = (ImageView) this.findViewById(R.id.s14_btn);
+         s15Btn = (ImageView) this.findViewById(R.id.s15_btn);
 
-
+        song1 = (Button) this.findViewById(R.id.btn_song1);
         song2 = (Button) this.findViewById(R.id.btn_song2);
-        happyB = (Button) this.findViewById(R.id.happy_b);
+        song3 = (Button) this.findViewById(R.id.btn_song3);
+        song4 = (Button) this.findViewById(R.id.btn_song4);
+        song5 = (Button) this.findViewById(R.id.btn_song5);
+        song6 = (Button) this.findViewById(R.id.btn_song6);
 
+        playList = new ArrayList<>();
+        playList.add(getResources().getString(R.string.song1));
+        playList.add(getResources().getString(R.string.song2));
+        playList.add(getResources().getString(R.string.song3));
+        playList.add(getResources().getString(R.string.song4));
+        playList.add(getResources().getString(R.string.song5));
+        playList.add(getResources().getString(R.string.song6));
+
+        repeat = (CheckBox) this.findViewById(R.id.repeat);
+
+        playListButton = (Button) this.findViewById(R.id.btn_playlist);
 
 
         s1Btn.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View view, MotionEvent motionEvent) {
+
                 return playSound(1, motionEvent, view);
 
             }
@@ -246,21 +426,87 @@ public class MainActivity extends Activity {
             }
         };
 
+        repeat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked)
+                {
+                    isRepeat = true;
+                    repeat.setButtonDrawable(getResources().getDrawable(R.drawable.repeat_icon_select));
+                }else{
+                    isRepeat = false;
+                    repeat.setButtonDrawable(getResources().getDrawable(R.drawable.repeat_icon));
+                }
+            }
+        });
+
+        playListButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                isPlayList = !isPlayList;
+                if(isPlaying)
+                {
+                    PlayingSong("play list",playListButton);
+                }else{
+                    playListCounter = 0;
+                    PlayingSong(playList.get(playListCounter),playListButton);
+                }
+
+            }
+        });
+
+
+        song1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+
+                PlayingSong(getResources().getString(R.string.song1), song1);
+
+            }
+        });
+
         song2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-               // PlayingSong("Titsy Bitsy Spider", song2);
+
+                PlayingSong(getResources().getString(R.string.song2), song2);
             }
         });
 
-        happyB.setOnClickListener(new View.OnClickListener() {
+
+
+        song3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                PlayingSong("Happy Birthday", happyB);
 
+                PlayingSong(getResources().getString(R.string.song3), song3);
             }
         });
 
+        song4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                PlayingSong(getResources().getString(R.string.song4), song4);
+            }
+        });
+
+        song5.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                PlayingSong(getResources().getString(R.string.song5), song5);
+            }
+        });
+
+        song6.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                PlayingSong(getResources().getString(R.string.song6), song6);
+            }
+        });
 
     }
 
@@ -273,10 +519,16 @@ public class MainActivity extends Activity {
            if(client!=null)
            {
                if(client.isConnected())
-                   new SendData(client).execute(id);
+                   if(id<8)
+                    sendDataToServer(String.valueOf(id));
+
            }
 
-
+            s10Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+            s11Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+            s13Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+            s14Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+            s15Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
         }
         return false;
     }
@@ -289,29 +541,136 @@ public class MainActivity extends Activity {
     {
         long time = 1;
         int tunes = 1;
-        String[] songArray = getResources().getStringArray(R.array.song_list);
         timeTunesMap.clear();
         int []songs_notes;
-        int [] time_nots;
+        long  time_nots;
         switch(mySong)
         {
-            case "Happy Birthday":
-                songs_notes = getResources().getIntArray(R.array.HappyB_Notes);
-                time_nots = getResources().getIntArray(R.array.happy_b_time);
-                for(int i=0;i<songs_notes.length;i++)
-                {
+            case "clearday":
+                                    songs_notes = getResources().getIntArray(R.array.clearday_Notes);
+                                    time_nots = 30;
+                                    for(int i=0;i<songs_notes.length;i++)
+                                    {
 
-                    song_array_size = time;
-                    List<RecordInfo> recordInfoList = new ArrayList<>();
+                                        song_array_size = time_nots;
 
-                    recordInfoList.add(new RecordInfo(songs_notes[i], null));
-                    timeTunesMap.put(time, recordInfoList);
-                    if(i<time_nots.length)
-                        time=time_nots[i];
+                                        List<RecordInfo> recordInfoList = new ArrayList<>();
 
-                }
-                break;
+                                        recordInfoList.add(new RecordInfo(songs_notes[i], null));
+                                        timeTunesMap.put(time_nots, recordInfoList);
+                                        time_nots+=20;
 
+                                    }
+                                    mp = MediaPlayer.create(context,R.raw.bensound_clearday);
+                                    mp.setOnCompletionListener(mediaListener);
+                                    mp.start();
+
+                                    break;
+
+            case "hipjazz":
+                            songs_notes = getResources().getIntArray(R.array.hipjazz_Notes);
+                            time_nots = 1;
+                            for(int i=0;i<songs_notes.length;i++)
+                            {
+
+                                song_array_size = time_nots;
+
+                                List<RecordInfo> recordInfoList = new ArrayList<>();
+
+                                recordInfoList.add(new RecordInfo(songs_notes[i], null));
+                                timeTunesMap.put(time_nots, recordInfoList);
+                                time_nots+=20;
+
+                            }
+                            mp = MediaPlayer.create(context,R.raw.bensound_hipjazz);
+                            mp.setOnCompletionListener(mediaListener);
+                            mp.start();
+
+                            break;
+
+            case "retrosoul":
+                            songs_notes = getResources().getIntArray(R.array.retrosoul_Notes);
+                            time_nots = 30;
+                            for(int i=0;i<songs_notes.length;i++)
+                            {
+
+                                song_array_size = time_nots;
+
+                                List<RecordInfo> recordInfoList = new ArrayList<>();
+
+                                recordInfoList.add(new RecordInfo(songs_notes[i], null));
+                                timeTunesMap.put(time_nots, recordInfoList);
+                                time_nots+=20;
+
+                            }
+                            mp = MediaPlayer.create(context,R.raw.bensound_retrosoul);
+                            mp.setOnCompletionListener(mediaListener);
+                            mp.start();
+
+                            break;
+
+            case "memories":
+                                songs_notes = getResources().getIntArray(R.array.memories_Notes);
+                                time_nots = 1;
+                                for(int i=0;i<songs_notes.length;i++)
+                                {
+
+                                    song_array_size = time_nots;
+
+                                    List<RecordInfo> recordInfoList = new ArrayList<>();
+
+                                    recordInfoList.add(new RecordInfo(songs_notes[i], null));
+                                    timeTunesMap.put(time_nots, recordInfoList);
+                                    time_nots+=35;
+
+                                }
+                                mp = MediaPlayer.create(context,R.raw.bensound_memories);
+                                mp.setOnCompletionListener(mediaListener);
+                                mp.start();
+
+                                break;
+
+            case "allthat":
+                            songs_notes = getResources().getIntArray(R.array.allthat_Notes);
+                            time_nots = 1;
+                            for(int i=0;i<songs_notes.length;i++)
+                            {
+
+                                song_array_size = time_nots;
+
+                                List<RecordInfo> recordInfoList = new ArrayList<>();
+
+                                recordInfoList.add(new RecordInfo(songs_notes[i], null));
+                                timeTunesMap.put(time_nots, recordInfoList);
+                                time_nots+=20;
+
+                            }
+                            mp = MediaPlayer.create(context,R.raw.bensound_allthat);
+                            mp.setOnCompletionListener(mediaListener);
+                            mp.start();
+
+                            break;
+
+            case "ssanova":
+                            songs_notes = getResources().getIntArray(R.array.ssanova_Notes);
+                            time_nots = 50;
+                            for(int i=0;i<songs_notes.length;i++)
+                            {
+
+                                song_array_size = time_nots;
+
+                                List<RecordInfo> recordInfoList = new ArrayList<>();
+
+                                recordInfoList.add(new RecordInfo(songs_notes[i], null));
+                                timeTunesMap.put(time_nots, recordInfoList);
+                                time_nots+=35;
+
+                            }
+                            mp = MediaPlayer.create(context,R.raw.bensound_theelevatorbossanova);
+                            mp.setOnCompletionListener(mediaListener);
+                            mp.start();
+
+                            break;
 
         }
 
@@ -323,10 +682,17 @@ public class MainActivity extends Activity {
     private void PlayingSong(final String song_name, Button button)
     {
 
-        //if (timeTunesMap.isEmpty()) return;
-        if (isPlaying) {
+
+        if (isPlaying && !isPlayList) {
             isPlaying = false;
-            button.setText(song_name);
+            if(button!=null)
+                button.setText(song_name);
+            if(mp!=null)
+            {
+                mp.stop();
+                mp.release();
+                mp = null;
+            }
 
             if (playTimer != null) {
                 playTimer.cancel();
@@ -335,8 +701,9 @@ public class MainActivity extends Activity {
         } else {
             addSongToPlay(song_name);
             isPlaying = true;
-            button.setText("Stop play");
-            final AtomicLong playTick = new AtomicLong(0);
+            if(button!=null)
+                button.setText("Stop play");
+            playTick.set(0);
             playTimer = new Timer();
             playTimer.schedule(new TimerTask() {
 
@@ -346,34 +713,33 @@ public class MainActivity extends Activity {
                     if (timeTunesMap.containsKey(currentTick)) {
                         List<RecordInfo> recordInfoList = timeTunesMap.get(currentTick);
 
+                        if(recordInfoList!=null)
+                        {
+                            if (recordInfoList.isEmpty()) {
+                                playTimer.cancel();
+                                Message playEndMessage = new Message();
+                                playEndMessage.what = 2;
+                                handler.sendMessage(playEndMessage);
+                            }
 
-                        if (recordInfoList.isEmpty()) {
-                            playTimer.cancel();
-                            Message playEndMessage = new Message();
-                            playEndMessage.what = 2;
-                            handler.sendMessage(playEndMessage);
+                            for (RecordInfo recordInfo : recordInfoList) {
+                                //int tunes = recordInfo.getTunes();
+                                //playSound(recordInfo.getTunes(), null, null);
+                                Message message = new Message();
+                                message.what = 1;
+                                message.arg1 = recordInfo.getTunes();
+                                message.obj = recordInfo.getButton();
+                                handler.sendMessage(message);
+
+                            }
                         }
 
-                        for (RecordInfo recordInfo : recordInfoList) {
-                            //int tunes = recordInfo.getTunes();
-                            playSound(recordInfo.getTunes(), null, null);
-                            Message message = new Message();
-                            message.what = 1;
-                            message.arg1 = recordInfo.getTunes();
-                            message.obj = recordInfo.getButton();
-                            handler.sendMessage(message);
-
-                        }
 
 
                     }
 
-                    if (isPlaying && (song_array_size +18) == currentTick) {
-                        Message message = new Message();
-                        message.what = 2;
-                        handler.sendMessage(message);
 
-                    }
+
                 }
             }, 0, RECORD_INTERVAL);
 
@@ -409,22 +775,29 @@ public class MainActivity extends Activity {
                 switch (tunes)
                 {
                     case 1: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_1));
-                        break;
+
+                            break;
                     case 2: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_2));
-                        break;
+
+                            break;
                     case 3: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_3));
-                        break;
+
+                            break;
                     case 4: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_4));
-                        break;
+
+                            break;
                     case 5: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_5));
-                        break;
+
+                            break;
                     case 6: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_6));
-                        break;
+
+                            break;
                     case 7: btn.setBackground(getResources().getDrawable(R.drawable.white_key_pressed_7));
-                        break;
+
+                            break;
 
                 }
-
+                sendDataToServer(String.valueOf(tunes));
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -432,36 +805,150 @@ public class MainActivity extends Activity {
                         switch (tunes)
                         {
                             case 1: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_1));
-                                break;
-                            case 2: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_2));
-                                break;
+
+                                    break;
+                            case 2:
+                                    btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_2));
+
+                                    break;
                             case 3: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_3));
-                                break;
+
+                                    break;
                             case 4: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_4));
-                                break;
+
+                                    break;
                             case 5: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_5));
-                                break;
+
+                                    break;
                             case 6: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_6));
-                                break;
+
+                                    break;
                             case 7: btn.setBackground(getResources().getDrawable(R.drawable.white_key_style_7));
-                                break;
+
+                                     break;
 
                         }
+
                     }
                 }, 150);
+
+                s10Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+                s11Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+                s13Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+                s14Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
+                s15Btn.setBackground(getResources().getDrawable(R.drawable.black_key_style));
             }
 
         } else if (msg.what == 2) {
-            isPlaying = false;
-            happyB.setText("Happy Birthday");
             if (playTimer != null) {
                 playTimer.cancel();
                 playTimer = null;
             }
+            isPlaying = false;
+            isPlayList = false;
+            song1.setText("clearday");
+            song2.setText("hipjazz");
+            song3.setText("retrosoul");
+            song4.setText("memories");
+            song5.setText("allthat");
+            song6.setText("ssanova");
+            playListButton.setText("play list");
+
             Toast.makeText(MainActivity.this, "End of play", Toast.LENGTH_SHORT).show();
         }
     }
 
+    private void startTimer() {
+        //set a new Timer
+        timer = new Timer();
+
+        //initialize the TimerTask's job
+        initializeTimerTask();
+
+        //schedule the timer, after the first 5000ms the TimerTask will run every 10000ms
+        timer.schedule(timerTask, 5000, 10000); //
+
+
+    }
+
+    public void initializeTimerTask() {
+
+        timerTask = new TimerTask() {
+            public void run() {
+
+                //use a handler to run a toast that shows the current timestamp
+                handler.post(new Runnable() {
+                    public void run() {
+                        sendDataToServer("@");
+                        wifiStatus = getWifiStatus();
+                        if(!wifiStatus)
+                        {
+                            try {
+                                if(client!=null)
+                                {
+                                    if(client.getClientSocket()!=null)
+                                        client.getClientSocket().close();
+                                    client = null;
+                                }
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                        }else{
+                            if(client == null)
+                            {
+                                client = new CommunicationThread();
+                            }
+                        }
+                    }
+                });
+            }
+        };
+    }
+
+    private void sendDataToServer(String data)
+    {
+        if(client!=null && client.isConnected())
+             new SendData(client).execute(data);
+    }
+
+    private boolean getWifiStatus()
+    {
+        boolean status = false;
+        String ssid = null;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION);
+        }else{
+            ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+            if(networkInfo.isConnected())
+            {
+                final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                final WifiInfo connectionInfo = wifiManager.getConnectionInfo();
+                if (connectionInfo != null && !(connectionInfo.getSSID().equals(""))) {
+                    //if (connectionInfo != null && !StringUtil.isBlank(connectionInfo.getSSID())) {
+                    ssid = connectionInfo.getSSID();
+                    if(ssid.equals("\"HF-LPB100\""))
+                    {
+                        status = true;
+                    }
+                }
+            }
+        }
+
+
+        return status;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //onResume we start our timer so it can start when the app comes from the background
+        startTimer();
+    }
 
 
     @Override
@@ -477,6 +964,20 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
 
+        //stop the timer, if it's not already null
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if(grantResults[0] == PackageManager.PERMISSION_GRANTED && requestCode == LOCATION){
+            //User allowed the location and you can read it now
+            wifiStatus = getWifiStatus();
+        }
     }
 
 }

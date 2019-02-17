@@ -15,7 +15,6 @@ public class CommunicationThread {
     private boolean isConnected;
     private static final int SERVERPORT = 8899;
     private static final String SERVER_IP = "10.10.100.254";
-
     public CommunicationThread()
     {
         isConnected = false;
@@ -34,10 +33,10 @@ public class CommunicationThread {
                 clientSocket = new Socket(serverAddr, SERVERPORT);
             } catch (UnknownHostException e) {
                 isConnected = false;
-                 e.printStackTrace();
+                 //e.printStackTrace();
             } catch (IOException e) {
                 isConnected = false;
-                e.printStackTrace();
+                //e.printStackTrace();
             }
 
 
@@ -45,6 +44,7 @@ public class CommunicationThread {
             if(clientSocket!=null)
             {
                 isConnected = true;
+
 
                 try {
 

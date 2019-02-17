@@ -14,14 +14,33 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         >
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:paddingTop="10dp"
+            android:src="@drawable/stern_logo"/>
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Stern Piano"
-            android:textSize="20dp"
-            android:textAlignment="center"
-            android:paddingTop="10dp" />
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btn_playlist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:text="Play List"/>
+
+            <CheckBox
+                android:id="@+id/repeat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:button="@drawable/repeat_icon"
+                />
+        </LinearLayout>
+
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -44,10 +63,10 @@
                         android:orientation="vertical">
 
                         <Button
-                            android:id="@+id/happy_b"
+                            android:id="@+id/btn_song1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Happy Birthday"
+                            android:text="clearday"
                             android:layout_margin="10dp"
                             android:theme="@style/AppTheme.Button"/>
 
@@ -55,14 +74,15 @@
                             android:id="@+id/btn_song2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Song 2"
+                            android:text="hipjazz"
                             android:layout_margin="10dp"
                             android:theme="@style/AppTheme.Button"/>
 
                         <Button
+                            android:id="@+id/btn_song3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Song 3"
+                            android:text="retrosoul"
                             android:layout_margin="10dp"
                             android:theme="@style/AppTheme.Button"/>
                     </LinearLayout>
@@ -91,7 +111,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_1"
                                 android:clickable="true"
-                                android:id="@+id/s3_btn"
+                                android:id="@+id/s1_btn"
                                 />
                             <TextView
                                 android:layout_width="match_parent"
@@ -110,7 +130,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_2"
                                 android:clickable="true"
-                                android:id="@+id/s4_btn"
+                                android:id="@+id/s2_btn"
                                 />
                             <TextView
                                 android:layout_width="match_parent"
@@ -129,7 +149,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_3"
                                 android:clickable="true"
-                                android:id="@+id/s5_btn"
+                                android:id="@+id/s3_btn"
                                 />
                             <TextView
                                 android:layout_width="match_parent"
@@ -148,7 +168,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_4"
                                 android:clickable="true"
-                                android:id="@+id/s6_btn"
+                                android:id="@+id/s4_btn"
 
                                 />
                             <TextView
@@ -169,7 +189,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_5"
                                 android:clickable="true"
-                                android:id="@+id/s7_btn"
+                                android:id="@+id/s5_btn"
 
                                 />
                             <TextView
@@ -190,7 +210,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_6"
                                 android:clickable="true"
-                                android:id="@+id/s1_btn"
+                                android:id="@+id/s6_btn"
 
                                 />
                             <TextView
@@ -211,7 +231,7 @@
                                 android:layout_height="match_parent"
                                 android:background="@drawable/white_key_style_7"
                                 android:clickable="true"
-                                android:id="@+id/s2_btn"
+                                android:id="@+id/s7_btn"
 
                                 />
                             <TextView
@@ -347,24 +367,26 @@
                         android:orientation="vertical">
 
                         <Button
-
+                            android:id="@+id/btn_song4"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Song 4"
+                            android:text="memories"
                             android:layout_margin="10dp"
                             android:theme="@style/AppTheme.Button"/>
 
                         <Button
+                            android:id="@+id/btn_song5"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Song 5"
+                            android:text="allthat"
                             android:layout_margin="10dp"
                             android:theme="@style/AppTheme.Button"/>
 
                         <Button
+                            android:id="@+id/btn_song6"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Song 6"
+                            android:text="ssanova"
                             android:layout_margin="10dp"
                             android:theme="@style/AppTheme.Button"/>
                     </LinearLayout>
