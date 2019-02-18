@@ -111,6 +111,7 @@ public class MainActivity extends Activity {
 
     private int playListCounter = 0;
 
+    private int song_number;
     int s1;
     int s2;
     int s3;
@@ -136,7 +137,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        song_number = 0;
         if(getWifiStatus())
             client = new CommunicationThread();
 
@@ -186,7 +187,7 @@ public class MainActivity extends Activity {
                                 playTimer = null;
                             }
                             playListCounter++;
-                            PlayingSong(playList.get(playListCounter),null);
+                            PlayingSong(playList.get(playListCounter),null, 7);
 
 
                         }else{
@@ -197,7 +198,7 @@ public class MainActivity extends Activity {
                             mp.stop();
                             mp.release();
                             mp = null;
-                            PlayingSong("play list", playListButton);
+                            PlayingSong("play list", playListButton, 7);
                         }
                     }else{
                         if(isPlayList)
@@ -231,7 +232,7 @@ public class MainActivity extends Activity {
                                 mp.reset();
 
                                 playListCounter++;
-                                PlayingSong(playList.get(playListCounter),null);
+                                PlayingSong(playList.get(playListCounter),null, 7);
 
 
                             }
@@ -240,20 +241,23 @@ public class MainActivity extends Activity {
                             {
 
                                 playListCounter = 0;
-                                PlayingSong(playList.get(playListCounter),null);
+                                PlayingSong(playList.get(playListCounter),null, 7);
                             }
 
                         }else{
                             if(client!=null)
                             {
                                 if(client.isConnected())
+                                {
                                     sendDataToServer(String.valueOf(1));
-                                sendDataToServer(String.valueOf(2));
-                                sendDataToServer(String.valueOf(3));
-                                sendDataToServer(String.valueOf(4));
-                                sendDataToServer(String.valueOf(5));
-                                sendDataToServer(String.valueOf(6));
-                                sendDataToServer(String.valueOf(7));
+                                    sendDataToServer(String.valueOf(2));
+                                    sendDataToServer(String.valueOf(3));
+                                    sendDataToServer(String.valueOf(4));
+                                    sendDataToServer(String.valueOf(5));
+                                    sendDataToServer(String.valueOf(6));
+                                    sendDataToServer(String.valueOf(7));
+                                }
+
 
                             }
                             mp.seekTo(0);
@@ -446,10 +450,10 @@ public class MainActivity extends Activity {
                 isPlayList = !isPlayList;
                 if(isPlaying)
                 {
-                    PlayingSong("play list",playListButton);
+                    PlayingSong("play list", playListButton, 7);
                 }else{
                     playListCounter = 0;
-                    PlayingSong(playList.get(playListCounter),playListButton);
+                    PlayingSong(playList.get(playListCounter),playListButton, 7);
                 }
 
             }
@@ -461,7 +465,7 @@ public class MainActivity extends Activity {
             public void onClick(View view) {
 
 
-                PlayingSong(getResources().getString(R.string.song1), song1);
+                PlayingSong(getResources().getString(R.string.song1), song1, 1);
 
             }
         });
@@ -470,7 +474,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
 
-                PlayingSong(getResources().getString(R.string.song2), song2);
+                PlayingSong(getResources().getString(R.string.song2), song2, 2);
             }
         });
 
@@ -480,7 +484,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
 
-                PlayingSong(getResources().getString(R.string.song3), song3);
+                PlayingSong(getResources().getString(R.string.song3), song3, 3);
             }
         });
 
@@ -488,7 +492,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
 
-                PlayingSong(getResources().getString(R.string.song4), song4);
+                PlayingSong(getResources().getString(R.string.song4), song4, 4);
             }
         });
 
@@ -496,7 +500,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
 
-                PlayingSong(getResources().getString(R.string.song5), song5);
+                PlayingSong(getResources().getString(R.string.song5), song5, 5);
             }
         });
 
@@ -504,7 +508,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
 
-                PlayingSong(getResources().getString(R.string.song6), song6);
+                PlayingSong(getResources().getString(R.string.song6), song6, 6);
             }
         });
 
@@ -679,72 +683,77 @@ public class MainActivity extends Activity {
     }
 
 
-    private void PlayingSong(final String song_name, Button button)
+    private void PlayingSong(final String song_name, Button button, int idSong)
     {
 
+        if(song_number == idSong || song_number == 0)
+        {
+            if (isPlaying && !isPlayList) {
+                isPlaying = false;
+                song_number = 0;
+                if(button!=null)
+                    button.setText(song_name);
+                if(mp!=null)
+                {
+                    mp.stop();
+                    mp.release();
+                    mp = null;
+                }
 
-        if (isPlaying && !isPlayList) {
-            isPlaying = false;
-            if(button!=null)
-                button.setText(song_name);
-            if(mp!=null)
-            {
-                mp.stop();
-                mp.release();
-                mp = null;
-            }
+                if (playTimer != null) {
+                    playTimer.cancel();
+                    playTimer = null;
+                }
+            } else {
+                addSongToPlay(song_name);
+                song_number = idSong;
+                isPlaying = true;
+                if(button!=null)
+                    button.setText("Stop play");
+                playTick.set(0);
+                playTimer = new Timer();
+                playTimer.schedule(new TimerTask() {
 
-            if (playTimer != null) {
-                playTimer.cancel();
-                playTimer = null;
-            }
-        } else {
-            addSongToPlay(song_name);
-            isPlaying = true;
-            if(button!=null)
-                button.setText("Stop play");
-            playTick.set(0);
-            playTimer = new Timer();
-            playTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        currentTick = playTick.incrementAndGet();
+                        if (timeTunesMap.containsKey(currentTick)) {
+                            List<RecordInfo> recordInfoList = timeTunesMap.get(currentTick);
 
-                @Override
-                public void run() {
-                    currentTick = playTick.incrementAndGet();
-                    if (timeTunesMap.containsKey(currentTick)) {
-                        List<RecordInfo> recordInfoList = timeTunesMap.get(currentTick);
+                            if(recordInfoList!=null)
+                            {
+                                if (recordInfoList.isEmpty()) {
+                                    playTimer.cancel();
+                                    Message playEndMessage = new Message();
+                                    playEndMessage.what = 2;
+                                    handler.sendMessage(playEndMessage);
+                                }
 
-                        if(recordInfoList!=null)
-                        {
-                            if (recordInfoList.isEmpty()) {
-                                playTimer.cancel();
-                                Message playEndMessage = new Message();
-                                playEndMessage.what = 2;
-                                handler.sendMessage(playEndMessage);
+                                for (RecordInfo recordInfo : recordInfoList) {
+                                    //int tunes = recordInfo.getTunes();
+                                    //playSound(recordInfo.getTunes(), null, null);
+                                    Message message = new Message();
+                                    message.what = 1;
+                                    message.arg1 = recordInfo.getTunes();
+                                    message.obj = recordInfo.getButton();
+                                    handler.sendMessage(message);
+
+                                }
                             }
 
-                            for (RecordInfo recordInfo : recordInfoList) {
-                                //int tunes = recordInfo.getTunes();
-                                //playSound(recordInfo.getTunes(), null, null);
-                                Message message = new Message();
-                                message.what = 1;
-                                message.arg1 = recordInfo.getTunes();
-                                message.obj = recordInfo.getButton();
-                                handler.sendMessage(message);
 
-                            }
+
                         }
 
 
 
                     }
+                }, 0, RECORD_INTERVAL);
 
 
-
-                }
-            }, 0, RECORD_INTERVAL);
-
-
+            }
         }
+
     }
 
 
