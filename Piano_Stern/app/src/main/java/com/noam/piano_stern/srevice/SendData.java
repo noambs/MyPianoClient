@@ -17,7 +17,6 @@ public class SendData extends AsyncTask<String, Void, Void> {
     @Override
     protected Void doInBackground(String... params) {
         String data = params[0];
-
         device.sendData("*"+data+"#");
         return null;
     }

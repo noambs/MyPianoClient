@@ -27,7 +27,7 @@ public class BlackLayout extends ViewGroup {
         int screenHigh = this.getHeight();
         double whiteKeyWidth = screenWidth / 7.0;
         double childWidth = whiteKeyWidth / 2 ;
-        int childHigh = screenHigh / 2;
+        int childHigh = (screenHigh*60)/100;
         int childCount = this.getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = this.getChildAt(i);

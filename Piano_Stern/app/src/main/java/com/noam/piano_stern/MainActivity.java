@@ -208,21 +208,6 @@ public class MainActivity extends Activity {
                                 playTimer = null;
                             }
 
-                            if(client!=null)
-                            {
-                                if(client.isConnected())
-                                {
-                                    sendDataToServer(String.valueOf(1));
-                                    sendDataToServer(String.valueOf(2));
-                                    sendDataToServer(String.valueOf(3));
-                                    sendDataToServer(String.valueOf(4));
-                                    sendDataToServer(String.valueOf(5));
-                                    sendDataToServer(String.valueOf(6));
-                                    sendDataToServer(String.valueOf(7));
-                                }
-
-
-                            }
 
                             currentTick = 0;
                             playTick.set(0);
@@ -245,21 +230,7 @@ public class MainActivity extends Activity {
                             }
 
                         }else{
-                            if(client!=null)
-                            {
-                                if(client.isConnected())
-                                {
-                                    sendDataToServer(String.valueOf(1));
-                                    sendDataToServer(String.valueOf(2));
-                                    sendDataToServer(String.valueOf(3));
-                                    sendDataToServer(String.valueOf(4));
-                                    sendDataToServer(String.valueOf(5));
-                                    sendDataToServer(String.valueOf(6));
-                                    sendDataToServer(String.valueOf(7));
-                                }
 
-
-                            }
                             mp.seekTo(0);
                             mp.start();
                             currentTick = 0;
