@@ -201,7 +201,7 @@ public class MainActivity extends Activity {
                             PlayingSong("play list", playListButton, 7);
                         }
                     }else{
-                        if(isPlayList)
+                        if(isPlayList && isRepeat)
                         {
                             if (playTimer != null) {
                                 playTimer.cancel();
@@ -212,29 +212,42 @@ public class MainActivity extends Activity {
                             currentTick = 0;
                             playTick.set(0);
 
-                            if(playListCounter < playList.size()-1)
+                            if(playListCounter == playList.size())
                             {
+                                mp.stop();
                                 mp.reset();
-
-                                playListCounter++;
-                                PlayingSong(playList.get(playListCounter),null, 7);
-
-
-                            }
-
-                            if(playListCounter == playList.size()-1)
-                            {
-
+                                mp.release();
+                                mp = null;
                                 playListCounter = 0;
                                 PlayingSong(playList.get(playListCounter),null, 7);
+                                playListCounter++;
+                            }else{
+                                if(playListCounter < playList.size())
+                                {
+                                    mp.stop();
+                                    mp.reset();
+                                    mp.release();
+                                    mp = null;
+
+
+                                    PlayingSong(playList.get(playListCounter),null, 7);
+                                    playListCounter++;
+
+                                }
+
                             }
 
-                        }else{
 
-                            mp.seekTo(0);
-                            mp.start();
-                            currentTick = 0;
-                            playTick.set(0);
+
+                        }else{
+                            if(!isPlayList && isRepeat)
+                            {
+                                mp.seekTo(0);
+                                mp.start();
+                                currentTick = 0;
+                                playTick.set(0);
+                            }
+
 
                         }
                     }
@@ -425,6 +438,7 @@ public class MainActivity extends Activity {
                 }else{
                     playListCounter = 0;
                     PlayingSong(playList.get(playListCounter),playListButton, 7);
+                    playListCounter++;
                 }
 
             }
